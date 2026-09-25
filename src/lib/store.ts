@@ -26,7 +26,7 @@ async function atomicWrite(store: Store): Promise<void> {
 
 export function isReadOnlyFs(error: unknown): boolean {
   const err = error as NodeJS.ErrnoException;
-  if (err?.code === "EROFS" || err?.code === "EACCES" || err?.code === "ENOTSUP") return true;
+  if (err?.code === "EROFS" || err?.code === "EACCES" || err?.code === "ENOTSUP" || err?.code === "ENOENT") return true;
   return typeof err?.message === "string" && /read-only file system/i.test(err.message);
 }
 
