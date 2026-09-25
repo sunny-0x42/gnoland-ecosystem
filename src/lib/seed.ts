@@ -64,6 +64,35 @@ const registeredValopers: Array<{
   { id: "val-konsortech", name: "KonsorTech", address: "g1zcuaehkdr7yzyuzve6getl0ey67fnwafahh6n3" },
 ];
 
+const valoperLogos: Record<string, string> = {
+  "val-fluxen": "/logos/val-fluxen.png",
+  "val-nodestake": "/logos/val-nodestake.png",
+  "val-husonode": "/logos/val-husonode.ico",
+  "val-aviaone": "/logos/val-aviaone.jpg",
+  "val-tanjira": "/logos/val-tanjira.svg",
+  "val-bonynode": "/logos/val-bonynode.ico",
+  "val-mictonode": "/logos/val-mictonode.ico",
+  "val-nodeist": "/logos/val-nodeist.png",
+  "val-owlstake": "/logos/val-owlstake.png",
+  "val-chaintools": "/logos/val-chaintools.ico",
+  "val-ibs": "/logos/val-ibs.ico",
+  "val-validarios": "/logos/val-validarios.png",
+  "val-mipenode": "/logos/val-mipenode.ico",
+  "val-zeycanode": "/logos/val-zeycanode.svg",
+  "val-kalpatech": "/logos/val-kalpatech.png",
+  "val-n1stake": "/logos/val-n1stake.png",
+  "val-ruangnode": "/logos/val-ruangnode.png",
+  "val-boygau": "/logos/val-boygau.png",
+  "val-nodesync": "/logos/val-nodesync.png",
+  "val-itrocket": "/logos/val-itrocket.ico",
+  "val-grand-valley": "/logos/val-grand-valley.ico",
+  "val-sychonix": "/logos/val-sychonix.ico",
+  "val-luckystar": "/logos/val-luckystar.png",
+  "val-kalamuc": "/logos/val-kalamuc.jpg",
+  "val-hazen": "/logos/val-hazen.ico",
+  "val-konsortech": "/logos/val-konsortech.png",
+};
+
 function valoperProject(item: (typeof registeredValopers)[number]) {
   return {
     id: item.id,
@@ -85,7 +114,7 @@ function valoperProject(item: (typeof registeredValopers)[number]) {
     lastUpdated: "2026-09-25",
     notes:
       "Listed on gno.land/r/gnops/valopers. The active gnoland-1 set checked on 2026-09-25 is Gnocore, OnBloc, Samourai Crew, and Berty.",
-    logo: "",
+    logo: valoperLogos[item.id] ?? "",
     network: "" as const,
     verified: false,
     riskFlag: false,
@@ -1479,7 +1508,7 @@ export const SEED = {
       lastUpdated: "2026-09-25",
       notes:
         "Moniker gno-core-validator-1. Signing address g1mmgvcssjw6x4fzphupfg6mtxqt36v000c5rf2a. In the active set at r/sys/validators/v0 height 317445 and rpc.gno.land/validators, power 60. Server type on the valoper profile: cloud.",
-      logo: "",
+      logo: "/logos/gnolang.png",
       network: "mainnet",
       verified: false,
       riskFlag: false,
@@ -1505,7 +1534,7 @@ export const SEED = {
       lastUpdated: "2026-09-25",
       notes:
         "Moniker onbloc-validator-1. Signing address g1hqhetnnz0raw5hps6yxexl7q09a6f8w3anlptt. In the active set at r/sys/validators/v0 height 317445 and rpc.gno.land/validators, power 60. Server type on the valoper profile: cloud.",
-      logo: "",
+      logo: "/logos/val-onbloc.png",
       network: "mainnet",
       verified: false,
       riskFlag: false,
@@ -1531,7 +1560,7 @@ export const SEED = {
       lastUpdated: "2026-09-25",
       notes:
         "Moniker samourai-crew-validator-1. Signing address g15t7f9q6km3ldt885duwl8xu5dncs98528amk4f. In the active set at r/sys/validators/v0 height 317445 and rpc.gno.land/validators, power 60. Server type on the valoper profile: cloud.",
-      logo: "",
+      logo: "/logos/val-samourai.jpg",
       network: "mainnet",
       verified: false,
       riskFlag: false,
@@ -1557,7 +1586,7 @@ export const SEED = {
       lastUpdated: "2026-09-25",
       notes:
         "Moniker berty-validator-1. Signing address g1l983yy3kpmapyzcfy53y5charfxupa5czjalea. In the active set at r/sys/validators/v0 height 317445 and rpc.gno.land/validators, power 60. Server type on the valoper profile: cloud.",
-      logo: "",
+      logo: "/logos/val-berty.ico",
       network: "mainnet",
       verified: false,
       riskFlag: false,
