@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
 import { Guide } from "@/components/Guide";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Tokens · Gnoland Ecosystem Tracker",
+export const metadata = pageMetadata({
+  title: "Tokens",
   description: "GNOT is the fee unit. GRC20 is the fungible token pattern. No prices or supply figures.",
-};
+  path: "/tokens",
+});
 
 export default function TokensPage() {
   return (

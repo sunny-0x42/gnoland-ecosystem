@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
 import { SubmitForm } from "@/components/SubmitForm";
+import { pageMetadata } from "@/lib/site";
 import { readStore } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Submit a project · Gnoland Ecosystem Tracker",
+export const metadata = pageMetadata({
+  title: "Submit a project",
   description: "Send public details for a Gno.land project. Listings stay off the board until they are reviewed.",
-};
+  path: "/submit",
+});
 
 export default async function SubmitPage() {
   const store = await readStore();

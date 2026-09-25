@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { Guide } from "@/components/Guide";
+import { pageMetadata } from "@/lib/site";
 import { STATUSES } from "@/lib/constants";
 
 const STATUS_HELP: Record<(typeof STATUSES)[number], string> = {
@@ -12,10 +12,11 @@ const STATUS_HELP: Record<(typeof STATUSES)[number], string> = {
   "Pending GPAO": "Waiting on a Gno package approval step before it can ship on-chain.",
 };
 
-export const metadata: Metadata = {
-  title: "Glossary · Gnoland Ecosystem Tracker",
+export const metadata = pageMetadata({
+  title: "Glossary",
   description: "What the status words, network dots, realms, and token names mean on this board.",
-};
+  path: "/glossary",
+});
 
 export default function GlossaryPage() {
   return (

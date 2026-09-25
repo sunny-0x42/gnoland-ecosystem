@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
 import { Guide } from "@/components/Guide";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Networks · Gnoland Ecosystem Tracker",
+export const metadata = pageMetadata({
+  title: "Networks",
   description: "Mainnet, Pearl, and staging on gno.land. Chain ids and what each network is for.",
-};
+  path: "/networks",
+});
 
 export default function NetworksPage() {
   return (
