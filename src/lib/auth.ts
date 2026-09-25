@@ -6,10 +6,12 @@ import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { ADMIN_USERNAME, COOKIE_NAME, SESSION_MS } from "@/lib/constants";
+import { readDurableJson, usesDurableStore, writeDurableJson } from "@/lib/durable";
 import { isReadOnlyFs } from "@/lib/store";
 
 const scryptAsync = promisify(scrypt);
 const authPath = path.join(process.cwd(), "data", "auth.json");
+const authBlob = "catalog/auth.json";
 const USERNAME_PATTERN = /^[A-Za-z][A-Za-z0-9_-]{1,31}$/;
 const MAX_ACCOUNTS = 20;
 
@@ -62,6 +64,10 @@ async function hashPassword(password: string, salt: string): Promise<string> {
 }
 
 async function writeAuth(auth: AuthFile): Promise<void> {
+  if (usesDurableStore()) {
+    await writeDurableJson(authBlob, auth);
+    return;
+  }
   await mkdir(path.dirname(authPath), { recursive: true });
   const tmp = `${authPath}.${process.pid}.tmp`;
   await writeFile(tmp, `${JSON.stringify(auth, null, 2)}\n`, "utf8");
@@ -96,7 +102,17 @@ async function loadAuthFile(): Promise<AuthFile | null | "broken"> {
   try {
     text = await readFile(authPath, "utf8");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return authFromEnv();
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if (usesDurableStore()) {
+        const saved = await readDurableJson(authBlob);
+        if (saved != null) {
+          const parsed = authSchema.safeParse(saved);
+          if (parsed.success) return parsed.data;
+          return "broken";
+        }
+      }
+      return authFromEnv();
+    }
     return "broken";
   }
   let raw: unknown;

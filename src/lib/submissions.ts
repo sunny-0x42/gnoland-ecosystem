@@ -3,16 +3,22 @@ import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { connection } from "next/server";
+import { readDurableJson, usesDurableStore, writeDurableJson } from "@/lib/durable";
 import { issueMessage, submissionSchema, type Submission } from "@/lib/schema";
 import { isReadOnlyFs, READ_ONLY_SAVE } from "@/lib/store";
 
 const dataDir = path.join(process.cwd(), "data");
 const filePath = path.join(dataDir, "submissions.json");
+const submissionsBlob = "catalog/submissions.json";
 const listSchema = submissionSchema.array().max(80);
 
 let queue: Promise<unknown> = Promise.resolve();
 
 async function atomicWrite(submissions: Submission[]): Promise<void> {
+  if (usesDurableStore()) {
+    await writeDurableJson(submissionsBlob, submissions);
+    return;
+  }
   await mkdir(dataDir, { recursive: true });
   const tmp = path.join(dataDir, `submissions.${process.pid}.tmp`);
   await writeFile(tmp, `${JSON.stringify(submissions, null, 2)}\n`, "utf8");
@@ -26,6 +32,13 @@ async function atomicWrite(submissions: Submission[]): Promise<void> {
 
 export async function readSubmissions(): Promise<Submission[]> {
   await connection();
+  if (usesDurableStore()) {
+    const raw = await readDurableJson(submissionsBlob);
+    if (raw == null) return [];
+    const parsed = listSchema.safeParse(raw);
+    if (!parsed.success) throw new Error(issueMessage(parsed.error));
+    return parsed.data;
+  }
   try {
     const raw = JSON.parse(await readFile(filePath, "utf8")) as unknown;
     const parsed = listSchema.safeParse(raw);

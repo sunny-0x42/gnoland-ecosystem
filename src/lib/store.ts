@@ -4,15 +4,21 @@ import path from "node:path";
 import { cache } from "react";
 import { connection } from "next/server";
 import { CATEGORIES } from "@/lib/constants";
+import { readDurableJson, usesDurableStore, writeDurableJson } from "@/lib/durable";
 import { SEED } from "@/lib/seed";
 import { issueMessage, storeSchema, type Store } from "@/lib/schema";
 
 const dataDir = path.join(process.cwd(), "data");
 const storePath = path.join(dataDir, "store.json");
+const storeBlob = "catalog/store.json";
 
 let queue: Promise<unknown> = Promise.resolve();
 
 async function atomicWrite(store: Store): Promise<void> {
+  if (usesDurableStore()) {
+    await writeDurableJson(storeBlob, store);
+    return;
+  }
   await mkdir(dataDir, { recursive: true });
   const tmp = path.join(dataDir, `store.${process.pid}.tmp`);
   await writeFile(tmp, `${JSON.stringify(store, null, 2)}\n`, "utf8");
@@ -91,7 +97,30 @@ function migrateStore(raw: unknown): unknown {
   return { ...record, projects };
 }
 
+function parseStored(raw: unknown): Store {
+  const direct = storeSchema.safeParse(withDefaultCategories(raw));
+  if (direct.success) {
+    assertUnique(direct.data.projects);
+    return direct.data;
+  }
+  const migrated = storeSchema.safeParse(migrateStore(raw));
+  if (!migrated.success) throw new Error(issueMessage(migrated.error));
+  assertUnique(migrated.data.projects);
+  return migrated.data;
+}
+
 async function loadFresh(): Promise<Store> {
+  if (usesDurableStore()) {
+    const raw = await readDurableJson(storeBlob);
+    if (raw == null) {
+      const seeded = storeSchema.parse(SEED);
+      assertUnique(seeded.projects);
+      return seeded;
+    }
+    const parsed = parseStored(raw);
+    if (!storeSchema.safeParse(withDefaultCategories(raw)).success) await writeDurableJson(storeBlob, parsed);
+    return parsed;
+  }
   try {
     const rawText = await readFile(storePath, "utf8");
     const raw = JSON.parse(rawText) as unknown;
