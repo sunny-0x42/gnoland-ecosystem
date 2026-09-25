@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+.turbo
+*.tsbuildinfo
+data/auth.json
+data/store.json
+data/submissions.json
+data/*.tmp
+.env*
+.vercel
+.DS_Store
