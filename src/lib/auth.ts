@@ -80,12 +80,23 @@ function saveError(error: unknown): Error {
   return error instanceof Error ? error : new Error("Could not save the password.");
 }
 
+function authFromEnv(): AuthFile | null | "broken" {
+  const raw = process.env.ADMIN_AUTH;
+  if (!raw || raw.trim() === "") return null;
+  try {
+    const parsed = authSchema.safeParse(JSON.parse(raw) as unknown);
+    return parsed.success ? parsed.data : "broken";
+  } catch {
+    return "broken";
+  }
+}
+
 async function loadAuthFile(): Promise<AuthFile | null | "broken"> {
   let text: string;
   try {
     text = await readFile(authPath, "utf8");
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return authFromEnv();
     return "broken";
   }
   let raw: unknown;
