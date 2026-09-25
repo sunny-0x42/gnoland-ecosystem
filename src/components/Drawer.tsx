@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ProjectFace, VerifiedMark } from "@/components/Logo";
+import { ProjectFace, projectTone, VerifiedMark } from "@/components/Logo";
 import type { Project } from "@/lib/schema";
 import { teamParts } from "@/lib/board";
 import { externalHref, formatDay, linkify, pathKind, realmHref } from "@/lib/text";
@@ -62,13 +62,21 @@ export function Drawer({
     }
   }
 
+  const tone = projectTone(project.id);
   return (
     <div className="modal-root">
       <button className="overlay" type="button" aria-label="Close details" onClick={onClose} />
       <button className="modal-close" type="button" data-autofocus aria-label="Close" onClick={onClose}>
         ×
       </button>
-      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <div
+        ref={dialogRef}
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawer-title"
+        style={{ ["--card" as string]: tone.bg, ["--card-2" as string]: tone.mate }}
+      >
         <ProjectFace project={project} markOnly />
         <p className="drawer-kicker">{project.categories.join(" · ")}</p>
         <h2 id="drawer-title">

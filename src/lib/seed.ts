@@ -1154,7 +1154,7 @@ export const SEED = {
     },
     {
       id: "bubblerumble",
-      name: "Bubble Rumble",
+      name: "Bubblerumble",
       status: "Live",
       categories: ["Game"],
       score: 55,
@@ -1170,8 +1170,8 @@ export const SEED = {
       realm: "gno.land/r/g1leu8d2vsplhehcfkjg50mwgdpxdkt8tztu95wr/bubblerumble",
       alsoPath: "",
       lastUpdated: "2026-09-25",
-      notes: "Player UI for the bubblerumble realms. The site and the realm render do not label mainnet or testnet.",
-      logo: "",
+      notes: "Player UI for the Bubblerumble realms. hooseer.com and bubblerumble.net are the same project. The sites and the realm render do not label mainnet or testnet.",
+      logo: "/logos/bubblerumble.png",
       ...clear,
     },
     {

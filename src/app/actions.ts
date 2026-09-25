@@ -3,15 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  authState,
+  changePassword,
   clearFailures,
   clearSession,
-  createAdmin,
   isAuthed,
+  listUsernames,
   markFailure,
   passwordMatches,
   rateLimited,
-  usernameMatches,
+  sessionUsername,
   writeSession,
 } from "@/lib/auth";
 import {
@@ -86,44 +86,42 @@ async function gate(): Promise<string | null> {
   return "Sign in required.";
 }
 
-export async function setupAction(_prev: AuthResult | null, formData: FormData): Promise<AuthResult> {
-  void _prev;
-  if ((await authState()) !== "setup") return { ok: false, error: "Admin login already exists." };
-  const username = String(formData.get("username") ?? "");
-  const password = String(formData.get("password") ?? "");
-  const confirm = String(formData.get("confirm") ?? "");
-  if (!usernameMatches(username)) return { ok: false, error: "The admin account name is admin." };
-  if (password.length < 8 || password.length > 200) {
-    return { ok: false, error: "Password must be 8 to 200 characters." };
-  }
-  if (password !== confirm) return { ok: false, error: "Passwords do not match." };
-  try {
-    await createAdmin(password);
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "Could not save the password." };
-  }
-  await writeSession();
-  redirect("/admin");
-}
+export type AccountResult = { ok: true; usernames: string[] } | { ok: false; error: string };
 
 export async function loginAction(_prev: AuthResult | null, formData: FormData): Promise<AuthResult> {
   void _prev;
   if (rateLimited()) return { ok: false, error: "Sign-in is paused for a few minutes." };
-  const username = String(formData.get("username") ?? "");
+  const username = String(formData.get("username") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   if (password.length < 1 || password.length > 200) {
     markFailure();
     return { ok: false, error: "Wrong account or password." };
   }
-  const passOk = await passwordMatches(password);
-  const userOk = usernameMatches(username);
-  if (!passOk || !userOk) {
+  if (!(await passwordMatches(username, password))) {
     markFailure();
     return { ok: false, error: "Wrong account or password." };
   }
   clearFailures();
-  await writeSession();
+  await writeSession(username);
   redirect("/admin");
+}
+
+export async function changePasswordAction(
+  username: string,
+  currentPassword: string,
+  nextPassword: string,
+  confirm: string,
+): Promise<AccountResult> {
+  const actor = await sessionUsername();
+  if (!actor) return { ok: false, error: "Sign in required." };
+  if (nextPassword !== confirm) return { ok: false, error: "Passwords do not match." };
+  try {
+    await changePassword(actor, username, currentPassword, nextPassword);
+    if (actor === username) await writeSession(username);
+    return { ok: true, usernames: await listUsernames() };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not change the password." };
+  }
 }
 
 export async function logoutAction(): Promise<void> {
@@ -225,6 +223,28 @@ export async function renameCategoryAction(from: string, to: string): Promise<Ac
     return { ok: true, store };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : "Could not rename the category." };
+  }
+}
+
+export async function reorderCategoriesAction(names: string[]): Promise<ActionResult> {
+  const denied = await gate();
+  if (denied) return { ok: false, error: denied };
+  if (!Array.isArray(names) || names.some((name) => typeof name !== "string")) {
+    return { ok: false, error: "Invalid category order." };
+  }
+  try {
+    const store = await updateStore((draft) => {
+      if (names.length !== draft.categories.length || new Set(names).size !== names.length) {
+        throw new Error("Category list changed. Reload and try again.");
+      }
+      const known = new Set(draft.categories);
+      if (names.some((name) => !known.has(name))) throw new Error("Category list changed. Reload and try again.");
+      draft.categories = names;
+    });
+    refresh();
+    return { ok: true, store };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Could not reorder categories." };
   }
 }
 

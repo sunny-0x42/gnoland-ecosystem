@@ -63,13 +63,24 @@ function firstLetter(name: string): string {
   return trimmed ? trimmed.charAt(0) : "?";
 }
 
-function letterColor(id: string): { bg: string; fg: string } {
+function colorIndex(id: string): number {
   let hash = 2166136261;
   for (let index = 0; index < id.length; index += 1) {
     hash ^= id.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
-  return LETTER_COLORS[(hash >>> 0) % LETTER_COLORS.length];
+  return (hash >>> 0) % LETTER_COLORS.length;
+}
+
+function letterColor(id: string): { bg: string; fg: string } {
+  return LETTER_COLORS[colorIndex(id)];
+}
+
+export function projectTone(id: string): { bg: string; fg: string; mate: string } {
+  const index = colorIndex(id);
+  const tone = LETTER_COLORS[index];
+  const mate = LETTER_COLORS[(index + 5) % LETTER_COLORS.length];
+  return { bg: tone.bg, fg: tone.fg, mate: mate.bg };
 }
 
 export function NetworkDot({ network }: { network: Project["network"] }) {

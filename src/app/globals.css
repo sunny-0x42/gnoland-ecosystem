@@ -599,6 +599,8 @@ kbd {
   line-height: 1;
 }
 .modal {
+  --card: #3ee08f;
+  --card-2: #38bdf8;
   position: fixed;
   z-index: 42;
   left: 50%;
@@ -609,19 +611,40 @@ kbd {
   overflow: auto;
   padding: 32px;
   border-radius: 28px;
-  background: #0c0c0f;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(460px 180px at 50% 0%, color-mix(in srgb, var(--card) 34%, transparent), transparent 72%),
+    radial-gradient(240px 160px at 100% 100%, color-mix(in srgb, var(--card-2) 22%, transparent), transparent 70%),
+    #0c0c0f;
+  border: 1px solid color-mix(in srgb, var(--card) 72%, white);
   text-align: center;
-  animation: modal-in 180ms ease;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.55),
+    0 0 48px color-mix(in srgb, var(--card) 32%, transparent);
+  animation: modal-in 180ms ease, card-glow 3.6s ease-in-out infinite;
 }
 @keyframes modal-in {
   from { opacity: 0; transform: translate(-50%, -46%); }
+}
+@keyframes card-glow {
+  0%, 100% {
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, 0.55),
+      0 0 28px color-mix(in srgb, var(--card) 24%, transparent);
+    border-color: color-mix(in srgb, var(--card) 55%, white);
+  }
+  50% {
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, 0.55),
+      0 0 64px color-mix(in srgb, var(--card-2) 46%, transparent);
+    border-color: color-mix(in srgb, var(--card-2) 75%, white);
+  }
 }
 .modal .face { align-items: center; }
 .modal .logo-wrap { width: 84px; height: 84px; margin: 0 auto 16px; }
 .modal h2 { justify-content: center; font-size: 32px; }
 .modal-score {
   margin: 8px 0 10px;
+  color: var(--card);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -641,7 +664,7 @@ kbd {
 .drawer-top { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
 .drawer-kicker {
   margin: 0;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--card) 78%, white);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px;
   letter-spacing: 0.12em;
@@ -785,6 +808,25 @@ kbd {
   gap: 6px;
   cursor: default;
 }
+.chip.static.is-dragging { opacity: 0.55; outline: 1px dashed var(--accent); }
+.grip {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 2px;
+  cursor: grab;
+  letter-spacing: -0.12em;
+  touch-action: none;
+}
+.grip:active { cursor: grabbing; }
+.you {
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.account-form { display: grid; gap: 12px; max-width: 420px; }
+.account-form h2 { margin: 0; font-size: 18px; }
 .chip-x {
   border: 0;
   background: transparent;

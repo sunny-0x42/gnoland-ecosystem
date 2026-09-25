@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition, type FormEvent } from "react";
+import { useMemo, useRef, useState, useTransition, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import {
   addCategoryAction,
   deleteProjectAction,
@@ -8,15 +8,17 @@ import {
   dismissSubmissionAction,
   logoutAction,
   removeCategoryAction,
+  reorderCategoriesAction,
   replaceStoreAction,
   savePageAction,
   upsertProjectAction,
 } from "@/app/actions";
+import { AccountsPanel } from "@/components/AccountsPanel";
 import { STATUSES } from "@/lib/constants";
 import type { Copy, Meta, PageDraft, Project, SourceLink, Store, Submission } from "@/lib/schema";
 import { fold, formatDay, localDay, slugify } from "@/lib/text";
 
-type Tab = "projects" | "page" | "submissions";
+type Tab = "projects" | "page" | "submissions" | "accounts";
 type PendingNav = { kind: "tab"; tab: Tab } | { kind: "project"; id: string | null };
 
 function blankProject(): Project {
@@ -51,7 +53,17 @@ function pickPage(store: Store): PageDraft {
   return { meta: store.meta, copy: store.copy, sources: store.sources };
 }
 
-export function AdminDesk({ initial, initialSubmissions }: { initial: Store; initialSubmissions: Submission[] }) {
+export function AdminDesk({
+  initial,
+  initialSubmissions,
+  accounts,
+  currentUser,
+}: {
+  initial: Store;
+  initialSubmissions: Submission[];
+  accounts: string[];
+  currentUser: string;
+}) {
   const first = initial.projects[0] ?? blankProject();
   const [store, setStore] = useState(initial);
   const [tab, setTab] = useState<Tab>("projects");
@@ -72,6 +84,10 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingNav, setPendingNav] = useState<PendingNav | null>(null);
   const [pending, startTransition] = useTransition();
+  const [dragName, setDragName] = useState<string | null>(null);
+  const dragNameRef = useRef<string | null>(null);
+  const savedOrder = useRef(initial.categories);
+  const liveOrder = useRef(initial.categories);
 
   const projectDirty = JSON.stringify(draft) !== JSON.stringify(base);
   const pageDirty = JSON.stringify(pageDraft) !== JSON.stringify(pageBase);
@@ -336,6 +352,8 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
         return;
       }
       setStore(result.store);
+      savedOrder.current = result.store.categories;
+      liveOrder.current = result.store.categories;
       setCategoryName("");
       setNotice(`Added ${name}.`);
       setError(null);
@@ -368,6 +386,8 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
       const saved = result.store.categories.find((item) => item.toLowerCase() === next.toLowerCase()) ?? next;
       const rewrite = (categories: string[]) => categories.map((item) => (item === from ? saved : item));
       setStore(result.store);
+      savedOrder.current = result.store.categories;
+      liveOrder.current = result.store.categories;
       setDraft((current) => ({ ...current, categories: rewrite(current.categories) }));
       setBase((current) => ({ ...current, categories: rewrite(current.categories) }));
       setSubmissions((current) =>
@@ -389,6 +409,8 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
         return;
       }
       setStore(result.store);
+      savedOrder.current = result.store.categories;
+      liveOrder.current = result.store.categories;
       setDraft((current) => {
         if (!current.categories.includes(name)) return current;
         const remaining = current.categories.filter((item) => item !== name);
@@ -397,6 +419,75 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
       setNotice(`Removed ${name}.`);
       setError(null);
     });
+  }
+
+  function commitCategoryOrder(names: string[]) {
+    if (names.join("\0") === savedOrder.current.join("\0")) return;
+    const previous = savedOrder.current;
+    setError(null);
+    startTransition(async () => {
+      const result = await reorderCategoriesAction(names);
+      if (!result.ok) {
+        savedOrder.current = previous;
+        liveOrder.current = previous;
+        setStore((current) => ({ ...current, categories: previous }));
+        setError(result.error);
+        setNotice(null);
+        return;
+      }
+      savedOrder.current = result.store.categories;
+      liveOrder.current = result.store.categories;
+      setStore(result.store);
+      setNotice("Category order saved.");
+    });
+  }
+
+  function moveCategory(name: string, delta: number) {
+    const next = liveOrder.current.slice();
+    const index = next.indexOf(name);
+    const nextIndex = index + delta;
+    if (index < 0 || nextIndex < 0 || nextIndex >= next.length) return;
+    const [item] = next.splice(index, 1);
+    next.splice(nextIndex, 0, item);
+    liveOrder.current = next;
+    setStore((current) => ({ ...current, categories: next }));
+    commitCategoryOrder(next);
+  }
+
+  function categoryAtPoint(x: number, y: number): string | null {
+    const hit = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-category]");
+    return hit?.dataset.category ?? null;
+  }
+
+  function onGripDown(event: ReactPointerEvent<HTMLButtonElement>, name: string) {
+    if (event.button !== 0 || editingCategory) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragNameRef.current = name;
+    setDragName(name);
+  }
+
+  function onGripMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const name = dragNameRef.current;
+    if (!name) return;
+    const target = categoryAtPoint(event.clientX, event.clientY);
+    if (!target || target === name) return;
+    const next = liveOrder.current.slice();
+    const fromIndex = next.indexOf(name);
+    const toIndex = next.indexOf(target);
+    if (fromIndex < 0 || toIndex < 0) return;
+    next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, name);
+    liveOrder.current = next;
+    setStore((current) => ({ ...current, categories: next }));
+  }
+
+  function onGripUp() {
+    const name = dragNameRef.current;
+    dragNameRef.current = null;
+    setDragName(null);
+    if (!name) return;
+    commitCategoryOrder(liveOrder.current);
   }
 
   return (
@@ -409,7 +500,9 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
                 <i className="dot" /> Admin
               </p>
               <h1>Edit tracker</h1>
-              <p className="subtitle">Saved data updated {formatDay(store.meta.updated)}.</p>
+              <p className="subtitle">
+                Signed in as {currentUser}. Saved data updated {formatDay(store.meta.updated)}.
+              </p>
             </div>
             <div className="admin-actions">
               <a className="ghost" href="/">
@@ -435,6 +528,9 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
           <button className="tab" type="button" role="tab" aria-selected={tab === "submissions"} onClick={() => requestTab("submissions")}>
             Submissions ({submissions.length})
           </button>
+          <button className="tab" type="button" role="tab" aria-selected={tab === "accounts"} onClick={() => requestTab("accounts")}>
+            Accounts
+          </button>
         </div>
         {pendingNav ? (
           <div className="confirm-bar" role="alertdialog" aria-label="Unsaved changes">
@@ -454,10 +550,12 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
             <section className="category-bar" aria-label="Categories">
               <div>
                 <p className="category-label">Categories</p>
-                <p className="hint-line">Add a name, or edit one. Renaming updates every project in that category.</p>
+                <p className="hint-line">
+                  Drag a category to change its order on the public board. Renaming updates every project in that category.
+                </p>
               </div>
               <div className="chips">
-                {store.categories.map((name) => {
+                {store.categories.map((name, index) => {
                   const used = store.projects.some((project) => project.categories.includes(name));
                   if (editingCategory === name) {
                     return (
@@ -482,8 +580,40 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
                     );
                   }
                   return (
-                    <span className="chip static" key={name}>
+                    <span className={dragName === name ? "chip static is-dragging" : "chip static"} key={name} data-category={name}>
+                      <button
+                        className="grip"
+                        type="button"
+                        aria-label={`Drag ${name}`}
+                        onPointerDown={(event) => onGripDown(event, name)}
+                        onPointerMove={onGripMove}
+                        onPointerUp={onGripUp}
+                        onPointerCancel={onGripUp}
+                        onKeyDown={(event) => {
+                          if (event.key === "ArrowLeft") {
+                            event.preventDefault();
+                            moveCategory(name, -1);
+                          } else if (event.key === "ArrowRight") {
+                            event.preventDefault();
+                            moveCategory(name, 1);
+                          }
+                        }}
+                      >
+                        ⋮⋮
+                      </button>
                       {name}
+                      <button className="chip-x" type="button" aria-label={`Move ${name} earlier`} disabled={index === 0} onClick={() => moveCategory(name, -1)}>
+                        ↑
+                      </button>
+                      <button
+                        className="chip-x"
+                        type="button"
+                        aria-label={`Move ${name} later`}
+                        disabled={index === store.categories.length - 1}
+                        onClick={() => moveCategory(name, 1)}
+                      >
+                        ↓
+                      </button>
                       <button className="chip-x" type="button" aria-label={`Rename ${name}`} onClick={() => startRename(name)}>
                         Edit
                       </button>
@@ -573,8 +703,10 @@ export function AdminDesk({ initial, initialSubmissions }: { initial: Store; ini
             onExport={exportStore}
             onImport={importStore}
           />
-        ) : (
+        ) : tab === "submissions" ? (
           <SubmissionInbox items={submissions} pending={pending} onOpen={openSubmission} onDismiss={dismissSubmission} />
+        ) : (
+          <AccountsPanel usernames={accounts} currentUser={currentUser} />
         )}
       </main>
     </div>
