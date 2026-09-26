@@ -138,7 +138,7 @@ export const SEED = {
       "Projects building on Gno.land, grouped by category.",
     legend: "Grouped by category. A project in more than one category appears in each row.",
     footerNote: "Not investment advice · DYOR",
-    updateHint: "Sign in as admin to add or edit projects.",
+    updateHint: "",
     searchPlaceholder: "Search projects, teams, realms, X...",
     empty: "No projects match this filter.",
   },

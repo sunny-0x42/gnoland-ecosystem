@@ -243,7 +243,9 @@ export function Tracker({ store }: { store: Store }) {
           </section>
         </main>
         <footer className="foot sheet">
-          <p className="hint">{store.copy.updateHint}</p>
+          {store.copy.updateHint && store.copy.updateHint !== "Sign in as admin to add or edit projects." ? (
+            <p className="hint">{store.copy.updateHint}</p>
+          ) : null}
           <ul className="sources">
             {store.sources.map((source) => (
               <li key={`${source.label}-${source.href}`}>

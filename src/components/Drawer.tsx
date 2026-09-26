@@ -33,6 +33,7 @@ export function Drawer({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
+    const scroller: HTMLDivElement = dialog;
     let startY = 0;
     let startScroll = 0;
     let pointerId = -1;
@@ -44,7 +45,7 @@ export function Drawer({
       if (target instanceof Element && target.closest("a, button, input, textarea, select, label")) return;
       pointerId = event.pointerId;
       startY = event.clientY;
-      startScroll = dialog.scrollTop;
+      startScroll = scroller.scrollTop;
       dragging = false;
     }
 
@@ -54,28 +55,28 @@ export function Drawer({
       if (!dragging) {
         if (Math.abs(delta) < 6) return;
         dragging = true;
-        dialog.classList.add("is-dragging");
-        dialog.setPointerCapture(event.pointerId);
+        scroller.classList.add("is-dragging");
+        scroller.setPointerCapture(event.pointerId);
       }
-      dialog.scrollTop = startScroll - delta;
+      scroller.scrollTop = startScroll - delta;
     }
 
     function onUp(event: PointerEvent) {
       if (event.pointerId !== pointerId) return;
       pointerId = -1;
       dragging = false;
-      dialog.classList.remove("is-dragging");
+      scroller.classList.remove("is-dragging");
     }
 
-    dialog.addEventListener("pointerdown", onDown);
-    dialog.addEventListener("pointermove", onMove);
-    dialog.addEventListener("pointerup", onUp);
-    dialog.addEventListener("pointercancel", onUp);
+    scroller.addEventListener("pointerdown", onDown);
+    scroller.addEventListener("pointermove", onMove);
+    scroller.addEventListener("pointerup", onUp);
+    scroller.addEventListener("pointercancel", onUp);
     return () => {
-      dialog.removeEventListener("pointerdown", onDown);
-      dialog.removeEventListener("pointermove", onMove);
-      dialog.removeEventListener("pointerup", onUp);
-      dialog.removeEventListener("pointercancel", onUp);
+      scroller.removeEventListener("pointerdown", onDown);
+      scroller.removeEventListener("pointermove", onMove);
+      scroller.removeEventListener("pointerup", onUp);
+      scroller.removeEventListener("pointercancel", onUp);
     };
   }, [project.id]);
 

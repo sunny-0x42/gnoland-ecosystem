@@ -77,7 +77,7 @@ export const copySchema = z.object({
   subtitle: z.string().min(1, "Subtitle is required").max(320),
   legend: z.string().min(1).max(280),
   footerNote: z.string().min(1).max(180),
-  updateHint: z.string().min(1).max(220),
+  updateHint: z.string().max(220),
   searchPlaceholder: z.string().min(1).max(80),
   empty: z.string().min(1).max(140),
 });
