@@ -31,6 +31,55 @@ export function Drawer({
   }, []);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    let startY = 0;
+    let startScroll = 0;
+    let pointerId = -1;
+    let dragging = false;
+
+    function onDown(event: PointerEvent) {
+      if (event.pointerType !== "mouse" || event.button !== 0) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest("a, button, input, textarea, select, label")) return;
+      pointerId = event.pointerId;
+      startY = event.clientY;
+      startScroll = dialog.scrollTop;
+      dragging = false;
+    }
+
+    function onMove(event: PointerEvent) {
+      if (event.pointerId !== pointerId) return;
+      const delta = event.clientY - startY;
+      if (!dragging) {
+        if (Math.abs(delta) < 6) return;
+        dragging = true;
+        dialog.classList.add("is-dragging");
+        dialog.setPointerCapture(event.pointerId);
+      }
+      dialog.scrollTop = startScroll - delta;
+    }
+
+    function onUp(event: PointerEvent) {
+      if (event.pointerId !== pointerId) return;
+      pointerId = -1;
+      dragging = false;
+      dialog.classList.remove("is-dragging");
+    }
+
+    dialog.addEventListener("pointerdown", onDown);
+    dialog.addEventListener("pointermove", onMove);
+    dialog.addEventListener("pointerup", onUp);
+    dialog.addEventListener("pointercancel", onUp);
+    return () => {
+      dialog.removeEventListener("pointerdown", onDown);
+      dialog.removeEventListener("pointermove", onMove);
+      dialog.removeEventListener("pointerup", onUp);
+      dialog.removeEventListener("pointercancel", onUp);
+    };
+  }, [project.id]);
+
+  useEffect(() => {
     const root = dialogRef.current?.parentElement;
     if (!root) return;
     function onKey(event: KeyboardEvent) {

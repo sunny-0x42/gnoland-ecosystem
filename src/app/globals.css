@@ -609,6 +609,9 @@ kbd {
   width: min(620px, calc(100% - 32px));
   max-height: min(640px, calc(100vh - 88px));
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 32px;
   border-radius: 28px;
   background:
@@ -621,6 +624,15 @@ kbd {
     0 28px 80px rgba(0, 0, 0, 0.55),
     0 0 48px color-mix(in srgb, var(--card) 32%, transparent);
   animation: modal-in 180ms ease, card-glow 3.6s ease-in-out infinite;
+}
+.modal::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+.modal.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 @keyframes modal-in {
   from { opacity: 0; transform: translate(-50%, -46%); }
